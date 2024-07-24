@@ -19,7 +19,7 @@ def run_postgres_query(endpoint, queries):
 @register_cell_magic
 def postgres(line, cell):
     endpoint = os.getenv(
-        "POSTGRES_ENDPOINT_URL", "postgres://nzuser:nzpass@localhost:5432/postgres"
+        "POSTGRES_ENDPOINT_URL", "postgres://nzuser:nzpass1234@localhost:5432/postgres"
     )
     run_postgres_query(endpoint, cell)
 
