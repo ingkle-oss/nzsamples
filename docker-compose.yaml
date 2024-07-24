@@ -1,0 +1,148 @@
+version: "3.8"
+services:
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server --console-address ":9001" /data
+    environment:
+      MINIO_ROOT_USER: "haruband"
+      MINIO_ROOT_PASSWORD: "haru1004"
+    ports:
+      - 9000:9000
+      - 9001:9001
+  minio_init:
+    image: minio/mc
+    restart: on-failure
+    volumes:
+      - ./datasets:/opt/datasets
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -ce "
+      /usr/bin/mc config host add minio http://minio:9000 haruband haru1004;
+      /usr/bin/mc mb --ignore-existing minio/datasets;
+      /usr/bin/mc cp --recursive /opt/datasets/ minio/datasets;
+      exit 0;
+      "
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "haruband"
+      POSTGRES_PASSWORD: "haru1004"
+    ports:
+      - 5432:5432
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda:33145
+      - --advertise-rpc-addr redpanda:33145
+    ports:
+      - 18081:18081
+      - 18082:18082
+      - 19092:19092
+      - 19644:9644
+    healthcheck:
+      test:
+        ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  redpanda_console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+        connect:
+          enabled: true
+          clusters:
+            - name: local-connect-cluster
+              url: http://connect:8083
+    ports:
+      - 8080:8080
+    depends_on:
+      - redpanda
+
+  notebook:
+    image: quay.io/jupyter/base-notebook
+    container_name: notebook
+    environment:
+      DOCKER_STACKS_JUPYTER_CMD: lab
+      ARROS_ENDPOINT_URL: http://arros:8886
+      NAZAREDB_ENDPOINT_URL: http://nazaredb:8888
+      POSTGRES_ENDPOINT_URL: postgres://haruband:haru1004@postgres:5432/postgres
+      OLLAMA_HOST: http://ollama:11434/v1
+      OLLAMA_MODEL: llama3
+    command:
+      - start-notebook.py
+      - --ServerApp.root_dir=/home/jovyan/work
+      - --IdentityProvider.token=''
+    ports:
+      - 8088:8888
+    volumes:
+      - ./notebooks:/home/jovyan/work
+
+  arros:
+    image: ingkle/arros:test
+    pull_policy: always
+    container_name: arros
+    command:
+      - --logfilter
+      - arros=debug
+    ports:
+      - 8886:8886
+    environment:
+      AWS_ENDPOINT_URL: "http://minio:9000"
+      AWS_ACCESS_KEY_ID: "haruband"
+      AWS_SECRET_ACCESS_KEY: "haru1004"
+      AWS_REGION: "default"
+      AWS_S3_ALLOW_UNSAFE_RENAME: "true"
+      AWS_ALLOW_HTTP: "true"
+      AWS_FORCE_PATH_STYLE: "true"
+      ARROS_FUNCTIONS_DIR: "/opt/functions"
+      ARROS_TOOLKITS_DIR: "/opt/toolkits"
+
+  nazaredb:
+    image: ingkle/nazaredb:test
+    pull_policy: always
+    container_name: nazaredb
+    command:
+      - --logfilter
+      - nazaredb=debug
+    ports:
+      - 8888:8888
+    environment:
+      AWS_ENDPOINT_URL: "http://minio:9000"
+      AWS_ACCESS_KEY_ID: "haruband"
+      AWS_SECRET_ACCESS_KEY: "haru1004"
+      AWS_REGION: "default"
+      AWS_S3_ALLOW_UNSAFE_RENAME: "true"
+      AWS_ALLOW_HTTP: "true"
+      AWS_FORCE_PATH_STYLE: "true"
+      NAZAREDB_NO_AUTHORIZATION: "true"
+      NAZAREDB_METASTORE_URL: "postgres://haruband:haru1004@postgres:5432/postgres"
