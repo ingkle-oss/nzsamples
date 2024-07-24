@@ -96,8 +96,6 @@ services:
       ARROS_ENDPOINT_URL: http://arros:8886
       NAZAREDB_ENDPOINT_URL: http://nazaredb:8888
       POSTGRES_ENDPOINT_URL: postgres://nzuser:nzpass1234@postgres:5432/postgres
-      OLLAMA_HOST: http://ollama:11434/v1
-      OLLAMA_MODEL: llama3
     command:
       - start-notebook.py
       - --ServerApp.root_dir=/home/jovyan/work
