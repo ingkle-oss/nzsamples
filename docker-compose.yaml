@@ -5,8 +5,8 @@ services:
     container_name: minio
     command: server --console-address ":9001" /data
     environment:
-      MINIO_ROOT_USER: "haruband"
-      MINIO_ROOT_PASSWORD: "haru1004"
+      MINIO_ROOT_USER: "nzuser"
+      MINIO_ROOT_PASSWORD: "nzpass"
     ports:
       - 9000:9000
       - 9001:9001
@@ -19,7 +19,7 @@ services:
       - minio
     entrypoint: >
       /bin/sh -ce "
-      /usr/bin/mc config host add minio http://minio:9000 haruband haru1004;
+      /usr/bin/mc config host add minio http://minio:9000 nzuser nzpass;
       /usr/bin/mc mb --ignore-existing minio/datasets;
       /usr/bin/mc cp --recursive /opt/datasets/ minio/datasets;
       exit 0;
@@ -30,8 +30,8 @@ services:
     container_name: postgres
     environment:
       POSTGRES_DB: "postgres"
-      POSTGRES_USER: "haruband"
-      POSTGRES_PASSWORD: "haru1004"
+      POSTGRES_USER: "nzuser"
+      POSTGRES_PASSWORD: "nzpass"
     ports:
       - 5432:5432
 
@@ -95,7 +95,7 @@ services:
       DOCKER_STACKS_JUPYTER_CMD: lab
       ARROS_ENDPOINT_URL: http://arros:8886
       NAZAREDB_ENDPOINT_URL: http://nazaredb:8888
-      POSTGRES_ENDPOINT_URL: postgres://haruband:haru1004@postgres:5432/postgres
+      POSTGRES_ENDPOINT_URL: postgres://nzuser:nzpass@postgres:5432/postgres
       OLLAMA_HOST: http://ollama:11434/v1
       OLLAMA_MODEL: llama3
     command:
@@ -118,8 +118,8 @@ services:
       - 8886:8886
     environment:
       AWS_ENDPOINT_URL: "http://minio:9000"
-      AWS_ACCESS_KEY_ID: "haruband"
-      AWS_SECRET_ACCESS_KEY: "haru1004"
+      AWS_ACCESS_KEY_ID: "nzuser"
+      AWS_SECRET_ACCESS_KEY: "nzpass"
       AWS_REGION: "default"
       AWS_S3_ALLOW_UNSAFE_RENAME: "true"
       AWS_ALLOW_HTTP: "true"
@@ -138,11 +138,11 @@ services:
       - 8888:8888
     environment:
       AWS_ENDPOINT_URL: "http://minio:9000"
-      AWS_ACCESS_KEY_ID: "haruband"
-      AWS_SECRET_ACCESS_KEY: "haru1004"
+      AWS_ACCESS_KEY_ID: "nzuser"
+      AWS_SECRET_ACCESS_KEY: "nzpass"
       AWS_REGION: "default"
       AWS_S3_ALLOW_UNSAFE_RENAME: "true"
       AWS_ALLOW_HTTP: "true"
       AWS_FORCE_PATH_STYLE: "true"
       NAZAREDB_NO_AUTHORIZATION: "true"
-      NAZAREDB_METASTORE_URL: "postgres://haruband:haru1004@postgres:5432/postgres"
+      NAZAREDB_METASTORE_URL: "postgres://nzuser:nzpass@postgres:5432/postgres"
