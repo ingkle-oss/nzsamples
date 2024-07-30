@@ -11,47 +11,25 @@ from IPython.core.magic import register_cell_magic
 def run_arros_stream(endpoint, target, queries, token: None):
     headers = {}
     headers["Content-Type"] = "application/json"
-    request = {}
-    request["name"] = target
-    request["type"] = "stream"
-    request["queries"] = queries
-
     if token is not None:
         headers["Authorization"] = "Basic {}".format(token)
 
-    response = requests.delete(
-        os.path.join(endpoint, "pipelines", target),
-        headers=headers,
-    )
-
     response = requests.post(
-        os.path.join(endpoint, "pipelines"),
-        data=json.dumps(request),
-        headers=headers,
+        os.path.join(endpoint, "pipelines", target), data=queries, headers=headers
     )
     if response.status_code != 200:
         print(f"{response.content}")
         raise response.raise_for_status()
-    else:
-        response = requests.post(
-            os.path.join(endpoint, "pipelines", target, "execute"),
-            data=json.dumps(request),
-            headers=headers,
-        )
-        if response.status_code != 200:
-            print(f"{response.content}")
-            raise response.raise_for_status()
 
 
 def check_arros_stream(endpoint, target, token: None):
     headers = {}
     headers["Content-Type"] = "application/json"
-
     if token is not None:
         headers["Authorization"] = "Basic {}".format(token)
 
     response = requests.get(
-        os.path.join(endpoint, "pipelines", target, "inspect"),
+        os.path.join(endpoint, "pipelines", target),
         headers=headers,
     )
     status = response.json()
@@ -61,7 +39,6 @@ def check_arros_stream(endpoint, target, token: None):
 def run_arros_query(endpoint, queries, token: None):
     headers = {}
     headers["Content-Type"] = "application/json"
-
     if token is not None:
         headers["Authorization"] = "Basic {}".format(token)
 
